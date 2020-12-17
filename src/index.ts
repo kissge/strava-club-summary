@@ -1,3 +1,4 @@
+import { WebClient } from '@slack/web-api';
 import strava from 'strava-v3';
 import { format, UserStats } from './UserStats';
 
@@ -6,6 +7,12 @@ import { format, UserStats } from './UserStats';
 
   if (!clubID) {
     throw new Error('CLUB_ID is not given');
+  }
+
+  const channel = process.env.SLACK_CHANNEL;
+
+  if (!channel) {
+    throw new Error('SLACK_CHANNEL is not given');
   }
 
   const stats = new Map<string, UserStats>();
@@ -21,9 +28,11 @@ import { format, UserStats } from './UserStats';
     stats.set(name, entry);
   });
 
-  console.log(
-    Array.from(stats.keys())
+  const slack = new WebClient(process.env.SLACK_TOKEN);
+  await slack.chat.postMessage({
+    text: Array.from(stats.keys())
       .map((name) => format(name, stats.get(name)!))
-      .join('\n')
-  );
+      .join('\n'),
+    channel,
+  });
 })();
